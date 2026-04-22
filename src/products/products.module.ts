@@ -1,13 +1,18 @@
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 import { ProductHttpController } from './infrastructure/inbound/http/product-http.controller';
 import { GetAllProductsUseCase } from './application/use-cases/get-all-products.use-case';
 import { GetProductByIdUseCase } from './application/use-cases/get-product-by-id.use-case';
-import { InMemoryProductRepositoryAdapter } from './infrastructure/outbound/persistence/in-memory-product.repository.adapter';
+import { CreateProductUseCase } from './application/use-cases/create-product.use-case';
+import { UpdateProductUseCase } from './application/use-cases/update-product.use-case';
+import { DeleteProductUseCase } from './application/use-cases/delete-product.use-case';
+import { MongooseProductRepositoryAdapter } from './infrastructure/outbound/persistence/mongoose-product.repository.adapter';
+import { ProductDocument, ProductSchema } from './infrastructure/outbound/persistence/schemas/product.schema';
 import { PRODUCT_REPOSITORY } from './domain/ports/outbound/product.repository.port';
 import { GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE } from './domain/ports/inbound/product-use-cases.port';
 
 /**
- * Módulo de Productos con Arquitectura Hexagonal
+ * Módulo de Productos con Arquitectura Hexagonal + MongoDB
  * 
  * Este módulo conecta todos los puertos con sus adaptadores:
  * 
@@ -22,12 +27,18 @@ import { GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE } from './domain/
  * - IProductRepository → interfaz para persistencia
  * 
  * ADAPTADORES DE SALIDA (Outbound Adapters):
- * - InMemoryProductRepositoryAdapter → implementa IProductRepository
+ * - MongooseProductRepositoryAdapter → implementa IProductRepository con MongoDB
  * 
  * NOTA: Los adaptadores están organizados en la carpeta 'infrastructure/'
  * que contiene las implementaciones concretas de los puertos.
  */
 @Module({
+  imports: [
+    // Registrar el schema de Mongoose
+    MongooseModule.forFeature([
+      { name: ProductDocument.name, schema: ProductSchema }
+    ]),
+  ],
   controllers: [
     ProductHttpController, // Adaptador de entrada HTTP
   ],
@@ -41,14 +52,16 @@ import { GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE } from './domain/
       provide: GET_PRODUCT_BY_ID_USE_CASE,
       useClass: GetProductByIdUseCase,
     },
+    CreateProductUseCase,
+    UpdateProductUseCase,
+    DeleteProductUseCase,
     
     // Adaptador de Salida (implementa puerto de salida)
     {
       provide: PRODUCT_REPOSITORY,
-      useClass: InMemoryProductRepositoryAdapter,
-      // Fácilmente reemplazable por:
-      // useClass: PrismaProductRepositoryAdapter,
-      // useClass: TypeOrmProductRepositoryAdapter,
+      useClass: MongooseProductRepositoryAdapter,
+      // Antes usábamos: InMemoryProductRepositoryAdapter
+      // Ahora usamos: MongooseProductRepositoryAdapter con MongoDB
     },
   ],
   exports: [GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE],

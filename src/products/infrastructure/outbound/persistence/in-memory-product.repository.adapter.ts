@@ -10,6 +10,7 @@ import { Product } from '../../../domain/entities/product.entity';
  * 
  * En este caso, es una implementación en memoria con datos de ejemplo.
  * Podría ser reemplazado fácilmente por:
+ * - MongooseProductRepositoryAdapter
  * - PrismaProductRepositoryAdapter
  * - TypeOrmProductRepositoryAdapter
  * - MongoProductRepositoryAdapter
@@ -73,5 +74,37 @@ export class InMemoryProductRepositoryAdapter implements IProductRepository {
   async findById(id: string): Promise<Product | null> {
     const product = this.products.find((p) => p.id === id);
     return product || null;
+  }
+
+  async create(product: Product): Promise<Product> {
+    this.products.push(product);
+    return product;
+  }
+
+  async update(id: string, productData: Partial<Product>): Promise<Product | null> {
+    const index = this.products.findIndex((p) => p.id === id);
+    if (index === -1) return null;
+
+    const existing = this.products[index];
+    const updated = new Product(
+      existing.id,
+      productData.name ?? existing.name,
+      productData.description ?? existing.description,
+      productData.price ?? existing.price,
+      productData.stock ?? existing.stock,
+      existing.createdAt,
+      new Date(),
+    );
+
+    this.products[index] = updated;
+    return updated;
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const index = this.products.findIndex((p) => p.id === id);
+    if (index === -1) return false;
+
+    this.products.splice(index, 1);
+    return true;
   }
 }
