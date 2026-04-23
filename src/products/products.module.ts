@@ -10,9 +10,10 @@ import { MongooseProductRepositoryAdapter } from './infrastructure/outbound/pers
 import { ProductDocument, ProductSchema } from './infrastructure/outbound/persistence/schemas/product.schema';
 import { PRODUCT_REPOSITORY } from './domain/ports/outbound/product.repository.port';
 import { GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE } from './domain/ports/inbound/product-use-cases.port';
+import { AuthModule } from '../auth/auth.module';
 
 /**
- * Módulo de Productos con Arquitectura Hexagonal + MongoDB
+ * Módulo de Productos con Arquitectura Hexagonal + MongoDB + JWT
  * 
  * Este módulo conecta todos los puertos con sus adaptadores:
  * 
@@ -21,7 +22,7 @@ import { GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE } from './domain/
  * - IGetProductByIdUseCase → implementado por GetProductByIdUseCase
  * 
  * ADAPTADORES DE ENTRADA (Inbound Adapters):
- * - ProductHttpController → usa los puertos de entrada
+ * - ProductHttpController → usa los puertos de entrada (protegido con JWT)
  * 
  * PUERTOS DE SALIDA (Outbound Ports):
  * - IProductRepository → interfaz para persistencia
@@ -38,6 +39,8 @@ import { GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE } from './domain/
     MongooseModule.forFeature([
       { name: ProductDocument.name, schema: ProductSchema }
     ]),
+    // Importar AuthModule para acceder a guards JWT
+    AuthModule,
   ],
   controllers: [
     ProductHttpController, // Adaptador de entrada HTTP

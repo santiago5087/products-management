@@ -6,6 +6,8 @@ import { CreateProductDto, UpdateProductDto } from '../../../application/dto/cre
 import { CreateProductUseCase } from '../../../application/use-cases/create-product.use-case';
 import { UpdateProductUseCase } from '../../../application/use-cases/update-product.use-case';
 import { DeleteProductUseCase } from '../../../application/use-cases/delete-product.use-case';
+import { Auth } from '../../../../auth/infrastructure/inbound/decorators/auth.decorator';
+import { CurrentUser } from '../../../../auth/infrastructure/inbound/decorators/current-user.decorator';
 
 /**
  * Adaptador de Entrada (Inbound Adapter / Primary Adapter)
@@ -20,6 +22,10 @@ import { DeleteProductUseCase } from '../../../application/use-cases/delete-prod
  * - GraphQLProductResolver
  * - ProductCLICommand
  * - ProductMessageConsumer (para colas)
+ * 
+ * PROTECCIÓN:
+ * - GET endpoints: Públicos (sin autenticación)
+ * - POST, PUT, DELETE: Requieren autenticación y rol 'admin'
  */
 @Controller('products')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
@@ -36,33 +42,58 @@ export class ProductHttpController {
     private readonly deleteProductUseCase: DeleteProductUseCase,
   ) {}
 
+  /**
+   * GET /products - Público
+   */
   @Get()
   async findAll(): Promise<ProductDto[]> {
     return await this.getAllProductsUseCase.execute();
   }
 
+  /**
+   * GET /products/:id - Público
+   */
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<ProductDto> {
     return await this.getProductByIdUseCase.execute(id);
   }
 
+  /**
+   * POST /products - Requiere autenticación y rol 'admin'
+   */
   @Post()
+  @Auth('admin') // Solo administradores pueden crear productos
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createProductDto: CreateProductDto): Promise<ProductDto> {
+  async create(
+    @Body() createProductDto: CreateProductDto,
+    @CurrentUser() user: any,
+  ): Promise<ProductDto> {
     return await this.createProductUseCase.execute(createProductDto);
   }
 
+  /**
+   * PUT /products/:id - Requiere autenticación y rol 'admin'
+   */
   @Put(':id')
+  @Auth('admin') // Solo administradores pueden actualizar productos
   async update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
+    @CurrentUser() user: any,
   ): Promise<ProductDto> {
     return await this.updateProductUseCase.execute(id, updateProductDto);
   }
 
+  /**
+   * DELETE /products/:id - Requiere autenticación y rol 'admin'
+   */
   @Delete(':id')
+  @Auth('admin') // Solo administradores pueden eliminar productos
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Param('id') id: string): Promise<void> {
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ): Promise<void> {
     return await this.deleteProductUseCase.execute(id);
   }
 }

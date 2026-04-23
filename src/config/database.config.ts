@@ -10,9 +10,16 @@ import { envs } from './envs';
 export const getDatabaseConfig = (): MongooseModuleOptions => ({
   uri: envs.mongodbUri,
   connectionFactory: (connection) => {
+    console.log('🔄 Iniciando conexión a MongoDB...');
+    
+    // Registrar eventos de conexión
     connection.on('connected', () => {
       console.log('✅ MongoDB conectado exitosamente');
-      console.log(`📍 URI: ${envs.mongodbUri.replace(/\/\/.*@/, '//***@')}`); // Oculta credenciales
+      console.log(`📍 URI: ${envs.mongodbUri.replace(/\/\/.*@/, '//***@')}`);
+    });
+
+    connection.on('open', () => {
+      console.log('✅ MongoDB abierto y listo para operaciones');
     });
 
     connection.on('disconnected', () => {
