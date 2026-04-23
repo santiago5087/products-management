@@ -2,6 +2,18 @@
 
 Proyecto NestJS implementando **Arquitectura Hexagonal** (Puertos y Adaptadores) con **MongoDB** para gestión completa de productos (CRUD) y autenticación JWT.
 
+## ✨ Características Principales
+
+- 🏗️ **Arquitectura Hexagonal** - Separación clara de responsabilidades (Dominio, Aplicación, Infraestructura)
+- 🔐 **Autenticación JWT** - Sistema completo con roles (admin/user) y guards
+- 📦 **CRUD de Productos** - Gestión completa con validaciones
+- 📄 **Paginación** - Sistema de paginación con ordenamiento y límites configurables
+- 🗃️ **MongoDB + Mongoose** - Base de datos NoSQL con schemas y validaciones
+- 🔒 **Bcrypt** - Hash seguro de contraseñas
+- ✅ **Validación de DTOs** - class-validator y class-transformer
+- 🚀 **TypeScript** - Tipado estático completo
+- 🐳 **Docker Ready** - Configuración para MongoDB con Docker
+
 ## 🚀 Inicio Rápido
 
 ### 1. Clonar e Instalar Dependencias
@@ -119,7 +131,7 @@ O accede directamente:
 
 | Endpoint | Método | Descripción | Protección |
 |----------|--------|-------------|------------|
-| `/products` | GET | Listar todos los productos | ❌ Público |
+| `/products` | GET | Listar productos (con paginación opcional) | ❌ Público |
 | `/products/:id` | GET | Obtener producto por ID | ❌ Público |
 | `/products` | POST | Crear nuevo producto | 🔒 Admin |
 | `/products/:id` | PUT | Actualizar producto | 🔒 Admin |
@@ -129,6 +141,71 @@ O accede directamente:
 - 🔒 **JWT**: Requiere token de autenticación
 - 🔒 **Admin**: Requiere token JWT con rol `admin`
 - Usa la colección de Postman para ejemplos detallados de cada endpoint
+
+#### Paginación (GET /products)
+
+El endpoint GET `/products` soporta paginación mediante query parameters:
+
+**Query Parameters:**
+- `page` (opcional): Número de página (por defecto: `1`)
+- `limit` (opcional): Cantidad de items por página (por defecto: `10`, máximo: `100`)
+- `sortBy` (opcional): Campo por el cual ordenar (por defecto: `createdAt`)
+- `order` (opcional): Orden ascendente o descendente - `asc` | `desc` (por defecto: `desc`)
+
+**Ejemplos:**
+
+```bash
+# Obtener todos los productos (comportamiento legacy, devuelve paginación por defecto)
+GET http://localhost:3000/products
+
+# Página 1 con 5 productos
+GET http://localhost:3000/products?page=1&limit=5
+
+# Página 2 con 10 productos
+GET http://localhost:3000/products?page=2&limit=10
+
+# Ordenar por nombre ascendente
+GET http://localhost:3000/products?page=1&limit=5&sortBy=name&order=asc
+
+# Ordenar por precio descendente
+GET http://localhost:3000/products?page=1&limit=5&sortBy=price&order=desc
+```
+
+**Respuesta Paginada:**
+
+```json
+{
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439011",
+      "name": "Laptop Dell XPS 15",
+      "description": "Laptop de alto rendimiento",
+      "price": 1299.99,
+      "stock": 15,
+      "available": true,
+      "totalValue": 19499.85,
+      "createdAt": "2024-01-15T00:00:00.000Z",
+      "updatedAt": "2024-01-15T00:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 5,
+    "total": 25,
+    "totalPages": 5,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}
+```
+
+**Campos de Metadata:**
+- `page`: Página actual
+- `limit`: Items por página
+- `total`: Total de productos en la base de datos
+- `totalPages`: Total de páginas disponibles
+- `hasNextPage`: Indica si existe una página siguiente
+- `hasPreviousPage`: Indica si existe una página anterior
 
 ### Autenticación JWT
 
@@ -206,6 +283,7 @@ src/
 │   ├── application/
 │   │   ├── use-cases/
 │   │   │   ├── get-all-products.use-case.ts
+│   │   │   ├── get-paginated-products.use-case.ts  # Nuevo: paginación
 │   │   │   ├── get-product-by-id.use-case.ts
 │   │   │   ├── create-product.use-case.ts
 │   │   │   ├── update-product.use-case.ts
@@ -213,7 +291,8 @@ src/
 │   │   └── dto/
 │   │       ├── product.dto.ts
 │   │       ├── create-product.dto.ts
-│   │       └── update-product.dto.ts
+│   │       ├── update-product.dto.ts
+│   │       └── pagination.dto.ts              # Nuevo: DTOs de paginación
 │   │
 │   └── infrastructure/
 │       ├── inbound/
