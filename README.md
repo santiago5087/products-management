@@ -237,7 +237,7 @@ src/
 - **[JWT_AUTHENTICATION.md](JWT_AUTHENTICATION.md)** - Guía completa de autenticación JWT con arquitectura hexagonal
 - **[MONGODB_INTEGRATION.md](MONGODB_INTEGRATION.md)** - Integración con MongoDB y Mongoose
 - **[HEXAGONAL_ARCHITECTURE.md](HEXAGONAL_ARCHITECTURE.md)** - Conceptos y diagramas de arquitectura hexagonal
-- **Colección de Postman** - Ejemplos de todos los endpoints (`Products-Management.postman_collection.json`)
+- **Colección de Postman** - Ejemplos de todos los endpoints (`technical-test-Edhy-Santiago-Marin.postman_collection.json`)
 
 ## 🎯 Arquitectura Hexagonal
 
