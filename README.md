@@ -13,6 +13,63 @@ Proyecto NestJS implementando **Arquitectura Hexagonal** (Puertos y Adaptadores)
 - ✅ **Validación de DTOs** - class-validator y class-transformer
 - 🚀 **TypeScript** - Tipado estático completo
 - 🐳 **Docker Ready** - Configuración para MongoDB con Docker
+- 📚 **Swagger/OpenAPI** - Documentación interactiva de la API
+
+## 📚 Documentación de la API
+
+La aplicación incluye documentación completa de la API en tres formatos:
+
+### 1. **Swagger UI (Recomendado)** 🌐
+Interfaz interactiva para probar todos los endpoints de la API directamente desde el navegador.
+
+**URL**: http://localhost:3000/api
+
+Características:
+- ✅ Probar endpoints directamente desde el navegador
+- ✅ Ver esquemas de request/response
+- ✅ Autenticación JWT integrada
+- ✅ Ejemplos de datos para cada endpoint
+- ✅ Validaciones y códigos de error documentados
+
+**Cómo usar:**
+1. Inicia el servidor: `npm run start:dev`
+2. Abre tu navegador en: http://localhost:3000/api
+3. Para endpoints protegidos:
+   - Haz clic en el botón **"Authorize"** 🔓
+   - Ingresa el token JWT (solo el token, sin "Bearer ")
+   - Haz clic en **"Authorize"** nuevamente
+   - Ahora puedes probar endpoints protegidos
+
+### 2. **API_DOCUMENTATION.md** 📄
+Documentación detallada en formato Markdown con ejemplos de cURL, códigos de estado HTTP y descripciones completas.
+
+**Ubicación**: [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md)
+
+**Contenido**:
+- Descripción detallada de cada endpoint
+- Ejemplos de request/response
+- Códigos de estado HTTP
+- Ejemplos con cURL
+- Guía de autenticación JWT
+- Notas sobre paginación y validaciones
+
+### 3. **swagger.yaml** 📋
+Especificación OpenAPI 3.0 completa que puede ser importada en herramientas como Postman, Insomnia o Swagger Editor.
+
+**Ubicación**: [`swagger.yaml`](./swagger.yaml)
+
+**Cómo usar:**
+```bash
+# Ver en Swagger Editor online
+# 1. Abre https://editor.swagger.io/
+# 2. File > Import file > Selecciona swagger.yaml
+
+# Importar en Postman
+# 1. Postman > Import > File > swagger.yaml
+# 2. Se crearán automáticamente todos los endpoints
+```
+
+---
 
 ## 🚀 Inicio Rápido
 

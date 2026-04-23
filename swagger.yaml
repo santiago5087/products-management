@@ -1,0 +1,617 @@
+openapi: 3.0.0
+info:
+  title: Products Management API
+  description: |
+    API REST para gestión de productos con arquitectura hexagonal, autenticación JWT y paginación.
+    
+    ## Características
+    - ✅ Autenticación JWT (válida por 1 día)
+    - ✅ Control de acceso basado en roles (admin/user)
+    - ✅ Paginación offset-based con ordenamiento
+    - ✅ Validación automática de DTOs
+    - ✅ Arquitectura Hexagonal (Ports & Adapters)
+    - ✅ CORS habilitado para desarrollo
+    
+    ## Roles
+    - **user**: Puede ver productos
+    - **admin**: Puede crear, actualizar y eliminar productos
+  version: '1.0'
+  contact:
+    name: API Support
+    url: http://localhost:3000
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor de desarrollo
+
+tags:
+  - name: auth
+    description: Endpoints de autenticación y autorización
+  - name: products
+    description: Endpoints de gestión de productos (CRUD + paginación)
+
+components:
+  securitySchemes:
+    JWT-auth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT obtenido del endpoint /auth/login o /auth/register.
+        Formato: Bearer <token>
+        Válido por: 1 día (24 horas)
+        
+  schemas:
+    # Auth Schemas
+    LoginDto:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email del usuario
+          example: admin@example.com
+        password:
+          type: string
+          format: password
+          minLength: 6
+          description: Contraseña del usuario (mínimo 6 caracteres)
+          example: admin123
+    
+    RegisterDto:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email único del usuario
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 6
+          maxLength: 50
+          description: Contraseña del usuario (entre 6 y 50 caracteres)
+          example: password123
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Nombre completo del usuario
+          example: John Doe
+        roles:
+          type: array
+          items:
+            type: string
+          description: Roles del usuario (opcional, por defecto ["user"])
+          example: ['user']
+    
+    UserResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID único del usuario
+          example: 507f1f77bcf86cd799439011
+        email:
+          type: string
+          description: Email del usuario
+          example: admin@example.com
+        name:
+          type: string
+          description: Nombre completo del usuario
+          example: Admin User
+        roles:
+          type: array
+          items:
+            type: string
+          description: Roles asignados al usuario
+          example: ['admin']
+    
+    AuthResponseDto:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: Token JWT para autenticación (válido por 1 día)
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: '#/components/schemas/UserResponseDto'
+    
+    # Product Schemas
+    CreateProductDto:
+      type: object
+      required:
+        - name
+        - description
+        - price
+        - stock
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Nombre del producto
+          example: Laptop Dell XPS 15
+        description:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: Descripción detallada del producto
+          example: Laptop potente con procesador Intel i7, 16GB RAM y pantalla 4K
+        price:
+          type: number
+          format: float
+          minimum: 0
+          description: Precio del producto en la moneda local
+          example: 1299.99
+        stock:
+          type: number
+          format: integer
+          minimum: 0
+          description: Cantidad disponible en inventario
+          example: 50
+    
+    UpdateProductDto:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Nombre del producto
+          example: Laptop Dell XPS 15 (Actualizado)
+        description:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: Descripción detallada del producto
+          example: Laptop con especificaciones mejoradas
+        price:
+          type: number
+          format: float
+          minimum: 0
+          description: Precio del producto
+          example: 1199.99
+        stock:
+          type: number
+          format: integer
+          minimum: 0
+          description: Cantidad disponible en inventario
+          example: 75
+    
+    ProductDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID único del producto
+          example: 507f1f77bcf86cd799439011
+        name:
+          type: string
+          description: Nombre del producto
+          example: Laptop Dell XPS 15
+        description:
+          type: string
+          description: Descripción detallada del producto
+          example: Laptop potente con procesador Intel i7, 16GB RAM y pantalla 4K
+        price:
+          type: number
+          format: float
+          description: Precio del producto
+          example: 1299.99
+        stock:
+          type: number
+          format: integer
+          description: Cantidad disponible en inventario
+          example: 50
+        available:
+          type: boolean
+          description: Indica si el producto está disponible (stock > 0)
+          example: true
+        totalValue:
+          type: number
+          format: float
+          description: Valor total del inventario (price * stock)
+          example: 64999.50
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del producto
+          example: '2024-01-15T10:30:00.000Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización del producto
+          example: '2024-01-16T14:20:00.000Z'
+    
+    # Pagination Schemas
+    PaginationMetaDto:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Página actual
+          example: 1
+        limit:
+          type: integer
+          description: Cantidad de elementos por página
+          example: 10
+        total:
+          type: integer
+          description: Total de elementos en la base de datos
+          example: 45
+        totalPages:
+          type: integer
+          description: Total de páginas disponibles
+          example: 5
+        hasNextPage:
+          type: boolean
+          description: Indica si existe una página siguiente
+          example: true
+        hasPreviousPage:
+          type: boolean
+          description: Indica si existe una página anterior
+          example: false
+    
+    PaginatedProductsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductDto'
+          description: Array de productos de la página actual
+        meta:
+          $ref: '#/components/schemas/PaginationMetaDto'
+          description: Metadata de paginación
+    
+    # Error Schemas
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          description: Código de estado HTTP
+          example: 400
+        message:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          description: Mensaje de error o array de mensajes de validación
+          example: ['name should not be empty', 'price must be a positive number']
+        error:
+          type: string
+          description: Tipo de error
+          example: Bad Request
+
+paths:
+  # Auth Endpoints
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Registrar nuevo usuario
+      description: Crea una nueva cuenta de usuario con email, contraseña, nombre y roles opcionales. Por defecto se asigna el rol "user".
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDto'
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        '400':
+          description: Datos inválidos o email ya registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Iniciar sesión
+      description: Autentica un usuario con email y contraseña. Devuelve un token JWT válido por 1 día.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                message: Credenciales inválidas
+                error: Unauthorized
+  
+  /auth/profile:
+    get:
+      tags:
+        - auth
+      summary: Obtener perfil del usuario autenticado
+      description: Devuelve la información del usuario actual. Requiere token JWT en el header Authorization.
+      operationId: getProfile
+      security:
+        - JWT-auth: []
+      responses:
+        '200':
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+                  name:
+                    type: string
+                  roles:
+                    type: array
+                    items:
+                      type: string
+                  isActive:
+                    type: boolean
+              example:
+                id: 507f1f77bcf86cd799439011
+                email: admin@example.com
+                name: Admin User
+                roles: ['admin']
+                isActive: true
+        '401':
+          description: No autenticado o token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  # Product Endpoints
+  /products:
+    get:
+      tags:
+        - products
+      summary: Listar productos (con o sin paginación)
+      description: |
+        Obtiene todos los productos. Si se proporcionan query params "page" o "limit", 
+        devuelve resultado paginado. Sin query params devuelve todos los productos (legacy).
+      operationId: findAllProducts
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Número de página (inicia en 1)
+          example: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Cantidad de productos por página (máximo 100)
+          example: 10
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            default: createdAt
+          description: Campo por el cual ordenar (name, price, createdAt, etc.)
+          example: name
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Orden ascendente o descendente
+          example: asc
+      responses:
+        '200':
+          description: Lista de productos (array simple o respuesta paginada según query params)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/ProductDto'
+                  - $ref: '#/components/schemas/PaginatedProductsResponse'
+    
+    post:
+      tags:
+        - products
+      summary: Crear nuevo producto
+      description: Crea un producto nuevo. Requiere autenticación con rol admin.
+      operationId: createProduct
+      security:
+        - JWT-auth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductDto'
+      responses:
+        '201':
+          description: Producto creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDto'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Sin permisos (rol admin requerido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /products/{id}:
+    get:
+      tags:
+        - products
+      summary: Obtener producto por ID
+      description: Busca y devuelve un producto específico por su identificador único.
+      operationId: findOneProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID del producto (formato MongoDB ObjectId)
+          example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Producto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDto'
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      tags:
+        - products
+      summary: Actualizar producto existente
+      description: Actualiza un producto por su ID. Requiere autenticación con rol admin.
+      operationId: updateProduct
+      security:
+        - JWT-auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID del producto a actualizar
+          example: 507f1f77bcf86cd799439011
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductDto'
+      responses:
+        '200':
+          description: Producto actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDto'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Sin permisos (rol admin requerido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      tags:
+        - products
+      summary: Eliminar producto
+      description: Elimina un producto por su ID. Requiere autenticación con rol admin.
+      operationId: deleteProduct
+      security:
+        - JWT-auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID del producto a eliminar
+          example: 507f1f77bcf86cd799439011
+      responses:
+        '204':
+          description: Producto eliminado exitosamente
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Sin permisos (rol admin requerido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
