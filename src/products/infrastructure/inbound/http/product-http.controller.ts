@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Inject, ValidationPipe, UsePipes, HttpCode, HttpStatus } from '@nestjs/common';
-import type { IGetAllProductsUseCase, IGetProductByIdUseCase } from '../../../domain/ports/inbound/product-use-cases.port';
-import { GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE } from '../../../domain/ports/inbound/product-use-cases.port';
+import { Controller, Get, Post, Put, Delete, Param, Body, Inject, ValidationPipe, UsePipes, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import type { IGetAllProductsUseCase, IGetProductByIdUseCase, IGetPaginatedProductsUseCase } from '../../../domain/ports/inbound/product-use-cases.port';
+import { GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE, GET_PAGINATED_PRODUCTS_USE_CASE } from '../../../domain/ports/inbound/product-use-cases.port';
 import { ProductDto } from '../../../application/dto/product.dto';
 import { CreateProductDto, UpdateProductDto } from '../../../application/dto/create-product.dto';
+import { PaginationQueryDto, PaginatedResponseDto } from '../../../application/dto/pagination.dto';
 import { CreateProductUseCase } from '../../../application/use-cases/create-product.use-case';
 import { UpdateProductUseCase } from '../../../application/use-cases/update-product.use-case';
 import { DeleteProductUseCase } from '../../../application/use-cases/delete-product.use-case';
@@ -34,6 +35,9 @@ export class ProductHttpController {
     @Inject(GET_ALL_PRODUCTS_USE_CASE)
     private readonly getAllProductsUseCase: IGetAllProductsUseCase,
     
+    @Inject(GET_PAGINATED_PRODUCTS_USE_CASE)
+    private readonly getPaginatedProductsUseCase: IGetPaginatedProductsUseCase,
+    
     @Inject(GET_PRODUCT_BY_ID_USE_CASE)
     private readonly getProductByIdUseCase: IGetProductByIdUseCase,
     
@@ -43,10 +47,16 @@ export class ProductHttpController {
   ) {}
 
   /**
-   * GET /products - Público
+   * GET /products - Público (todos los productos sin paginación)
+   * Mantener para compatibilidad con clientes antiguos
    */
   @Get()
-  async findAll(): Promise<ProductDto[]> {
+  async findAll(@Query() query: PaginationQueryDto): Promise<ProductDto[] | PaginatedResponseDto<ProductDto>> {
+    // Si hay query params de paginación, usar endpoint paginado
+    if (query.page || query.limit) {
+      return await this.getPaginatedProductsUseCase.execute(query);
+    }
+    // Si no, devolver todos los productos (comportamiento legacy)
     return await this.getAllProductsUseCase.execute();
   }
 

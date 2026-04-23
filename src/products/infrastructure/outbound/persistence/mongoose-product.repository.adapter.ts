@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { IProductRepository } from '../../../domain/ports/outbound/product.repository.port';
+import { IProductRepository, PaginationOptions, PaginatedResult } from '../../../domain/ports/outbound/product.repository.port';
 import { Product } from '../../../domain/entities/product.entity';
 import { ProductDocument } from './schemas/product.schema';
 
@@ -26,6 +26,31 @@ export class MongooseProductRepositoryAdapter implements IProductRepository {
   async findAll(): Promise<Product[]> {
     const documents = await this.productModel.find().exec();
     return documents.map(doc => this.toDomain(doc));
+  }
+
+  async findAllPaginated(options: PaginationOptions): Promise<PaginatedResult<Product>> {
+    const { page, limit, sortBy = 'createdAt', order = 'desc' } = options;
+    const skip = (page - 1) * limit;
+
+    // Construir orden de Mongoose
+    const sortOrder = order === 'asc' ? 1 : -1;
+    const sortOptions: any = { [sortBy]: sortOrder };
+
+    // Ejecutar consultas en paralelo
+    const [documents, total] = await Promise.all([
+      this.productModel
+        .find()
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.productModel.countDocuments().exec(),
+    ]);
+
+    return {
+      data: documents.map(doc => this.toDomain(doc)),
+      total,
+    };
   }
 
   async findById(id: string): Promise<Product | null> {

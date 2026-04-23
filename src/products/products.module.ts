@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProductHttpController } from './infrastructure/inbound/http/product-http.controller';
 import { GetAllProductsUseCase } from './application/use-cases/get-all-products.use-case';
+import { GetPaginatedProductsUseCase } from './application/use-cases/get-paginated-products.use-case';
 import { GetProductByIdUseCase } from './application/use-cases/get-product-by-id.use-case';
 import { CreateProductUseCase } from './application/use-cases/create-product.use-case';
 import { UpdateProductUseCase } from './application/use-cases/update-product.use-case';
@@ -9,7 +10,7 @@ import { DeleteProductUseCase } from './application/use-cases/delete-product.use
 import { MongooseProductRepositoryAdapter } from './infrastructure/outbound/persistence/mongoose-product.repository.adapter';
 import { ProductDocument, ProductSchema } from './infrastructure/outbound/persistence/schemas/product.schema';
 import { PRODUCT_REPOSITORY } from './domain/ports/outbound/product.repository.port';
-import { GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE } from './domain/ports/inbound/product-use-cases.port';
+import { GET_ALL_PRODUCTS_USE_CASE, GET_PAGINATED_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE } from './domain/ports/inbound/product-use-cases.port';
 import { AuthModule } from '../auth/auth.module';
 
 /**
@@ -52,6 +53,10 @@ import { AuthModule } from '../auth/auth.module';
       useClass: GetAllProductsUseCase,
     },
     {
+      provide: GET_PAGINATED_PRODUCTS_USE_CASE,
+      useClass: GetPaginatedProductsUseCase,
+    },
+    {
       provide: GET_PRODUCT_BY_ID_USE_CASE,
       useClass: GetProductByIdUseCase,
     },
@@ -67,6 +72,6 @@ import { AuthModule } from '../auth/auth.module';
       // Ahora usamos: MongooseProductRepositoryAdapter con MongoDB
     },
   ],
-  exports: [GET_ALL_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE],
+  exports: [GET_ALL_PRODUCTS_USE_CASE, GET_PAGINATED_PRODUCTS_USE_CASE, GET_PRODUCT_BY_ID_USE_CASE],
 })
 export class ProductsModule {}

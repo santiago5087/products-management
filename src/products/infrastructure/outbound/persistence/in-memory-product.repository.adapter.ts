@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IProductRepository } from '../../../domain/ports/outbound/product.repository.port';
+import { IProductRepository, PaginationOptions, PaginatedResult } from '../../../domain/ports/outbound/product.repository.port';
 import { Product } from '../../../domain/entities/product.entity';
 
 /**
@@ -69,6 +69,30 @@ export class InMemoryProductRepositoryAdapter implements IProductRepository {
 
   async findAll(): Promise<Product[]> {
     return [...this.products];
+  }
+
+  async findAllPaginated(options: PaginationOptions): Promise<PaginatedResult<Product>> {
+    const { page, limit, sortBy = 'createdAt', order = 'desc' } = options;
+    const skip = (page - 1) * limit;
+
+    // Clonar y ordenar
+    let sorted = [...this.products];
+    sorted.sort((a, b) => {
+      const aValue = a[sortBy as keyof Product];
+      const bValue = b[sortBy as keyof Product];
+      
+      if (aValue < bValue) return order === 'asc' ? -1 : 1;
+      if (aValue > bValue) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Paginar
+    const data = sorted.slice(skip, skip + limit);
+    
+    return {
+      data,
+      total: this.products.length,
+    };
   }
 
   async findById(id: string): Promise<Product | null> {
